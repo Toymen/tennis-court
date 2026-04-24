@@ -41,6 +41,15 @@ describe("computeLeaderboard", () => {
     expect(board[0].points).toBeGreaterThanOrEqual(board[1].points);
   });
 
+  it("grants 2 points to both teams when games are tied", () => {
+    const players = [makePlayer("a", "Alice"), makePlayer("b", "Bob"), makePlayer("c", "Clara"), makePlayer("d", "David")];
+    const board = computeLeaderboard(players, [makeRound("6:4 4:6")]);
+
+    for (const player of players) {
+      expect(board.find((entry) => entry.id === player.id)?.points).toBe(2);
+    }
+  });
+
   it("counts benched players pause rounds", () => {
     const players = [makePlayer("a", "Alice"), makePlayer("b", "Bob"), makePlayer("c", "Clara"), makePlayer("d", "David"), makePlayer("e", "Eva")];
     const round: Round = { ...makeRound("6:4"), benched: [makePlayer("e", "Eva")] };
