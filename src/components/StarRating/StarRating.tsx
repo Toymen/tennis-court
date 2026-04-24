@@ -1,5 +1,7 @@
 import { LuStar } from "react-icons/lu";
 
+const STAR_VALUES = [1, 2, 3, 4] as const;
+
 interface StarRatingProps {
   value: number;
   onChange?: (value: number) => void;
@@ -9,7 +11,7 @@ interface StarRatingProps {
 export function StarRating({ value, onChange, interactive = false }: StarRatingProps) {
   return (
     <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => {
+      {STAR_VALUES.map((star) => {
         const active = star <= Number(value || 0);
         const icon = (
           <LuStar className={`h-4 w-4 ${active ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />

@@ -13,5 +13,5 @@ type Story = StoryObj<typeof StarRating>;
 
 export const NoStars: Story = { args: { value: 0 } };
 export const ThreeStars: Story = { args: { value: 3 } };
-export const FullStars: Story = { args: { value: 5 } };
+export const FullStars: Story = { args: { value: 4 } };
 export const Interactive: Story = { args: { value: 2, interactive: true } };
