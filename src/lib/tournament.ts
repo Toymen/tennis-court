@@ -1,5 +1,45 @@
 import type { Match, Player, Round, TournamentHistory } from "@/types";
-import { addMinutesToTime, shuffleArray } from "@/lib/utils";
+import { addMinutesToTime } from "@/lib/utils";
+
+function byStrengthDesc(a: Player, b: Player): number {
+  return Number(b.strength ?? 0) - Number(a.strength ?? 0);
+}
+
+function teamStrength(team: Player[]): number {
+  return team.reduce((total, player) => total + Number(player.strength ?? 0), 0);
+}
+
+function pairPlayers(pool: Player[]): Player[][] {
+  const ordered = [...pool].sort(byStrengthDesc);
+  const teams: Player[][] = [];
+
+  while (ordered.length >= 2) {
+    const strongest = ordered.shift();
+    const weakest = ordered.pop();
+
+    if (!strongest || !weakest) break;
+    teams.push([strongest, weakest]);
+  }
+
+  return teams;
+}
+
+function createTeams(players: Player[]): Player[][] {
+  const men = players.filter((player) => player.gender === "m").sort(byStrengthDesc);
+  const women = players.filter((player) => player.gender === "w").sort(byStrengthDesc);
+  const flexible = players.filter((player) => player.gender !== "m" && player.gender !== "w");
+  const teams: Player[][] = [];
+
+  while (men.length > 0 && women.length > 0) {
+    const man = men.shift();
+    const woman = women.pop();
+
+    if (!man || !woman) break;
+    teams.push([man, woman]);
+  }
+
+  return [...teams, ...pairPlayers([...men, ...women, ...flexible])];
+}
 
 function createRound(
   players: Player[],
@@ -16,23 +56,23 @@ function createRound(
   });
 
   const matchCount = Math.min(Math.floor(ordered.length / 4), courtNames.length);
-  const activePlayers = shuffleArray(ordered.slice(0, matchCount * 4));
+  const activePlayers = ordered.slice(0, matchCount * 4);
   const benched = ordered.slice(matchCount * 4);
+  const teams = createTeams(activePlayers).sort((teamA, teamB) => teamStrength(teamB) - teamStrength(teamA));
   const matches: Match[] = [];
 
   for (let i = 0; i < matchCount; i += 1) {
-    const group = activePlayers.slice(i * 4, i * 4 + 4).sort(
-      (a, b) => Number(b.strength ?? 0) - Number(a.strength ?? 0),
-    );
-    const teamA = [group[0], group[3]];
-    const teamB = [group[1], group[2]];
+    const teamA = teams[i];
+    const teamB = teams[teams.length - 1 - i];
+
+    if (!teamA || !teamB) continue;
 
     for (const p of [...teamA, ...teamB]) {
       history.played[p.id] = (history.played[p.id] ?? 0) + 1;
     }
 
     matches.push({
-      id: `r${roundNumber}-m${i + 1}-${group.map((p) => p.id).join("-")}`,
+      id: `r${roundNumber}-m${i + 1}-${[...teamA, ...teamB].map((p) => p.id).join("-")}`,
       courtName: courtNames[i] ?? `Court ${i + 1}`,
       teamA,
       teamB,
