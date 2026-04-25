@@ -17,21 +17,33 @@ function createEmptyStats(player: Player): PlayerStats {
   };
 }
 
+function getMatchPoints(parsed: ReturnType<typeof parseResultInput>, team: "A" | "B"): number {
+  if (!parsed) return 0;
+  if (parsed.gamesA === parsed.gamesB) return 2;
+  if (parsed.winner === team) return 3;
+  if (parsed.winner === "draw") return 1;
+  return 0;
+}
+
 export function computeLeaderboard(players: Player[], rounds: Round[]): PlayerStats[] {
   const statsMap = Object.fromEntries(players.map((p) => [p.id, createEmptyStats(p)]));
 
   for (const round of rounds) {
-    for (const p of round.benched) {
-      if (statsMap[p.id]) statsMap[p.id].pauseRounds += 1;
+    const hasRoundResult = round.matches.some((match) => parseResultInput(match.result));
+
+    if (hasRoundResult) {
+      for (const p of round.benched) {
+        if (statsMap[p.id]) statsMap[p.id].pauseRounds += 1;
+      }
     }
 
     for (const match of round.matches) {
+      const parsed = parseResultInput(match.result);
+      if (!parsed) continue;
+
       for (const p of [...match.teamA, ...match.teamB]) {
         if (statsMap[p.id]) statsMap[p.id].playedRounds += 1;
       }
-
-      const parsed = parseResultInput(match.result);
-      if (!parsed) continue;
 
       for (const p of match.teamA) {
         const e = statsMap[p.id];
@@ -40,9 +52,10 @@ export function computeLeaderboard(players: Player[], rounds: Round[]): PlayerSt
         e.setsLost += parsed.setsB;
         e.gamesWon += parsed.gamesA;
         e.gamesLost += parsed.gamesB;
-        if (parsed.winner === "A") { e.wins += 1; e.points += 3; }
-        else if (parsed.winner === "B") { e.losses += 1; }
-        else { e.draws += 1; e.points += 1; }
+        if (parsed.winner === "A") e.wins += 1;
+        else if (parsed.winner === "B") e.losses += 1;
+        else e.draws += 1;
+        e.points += getMatchPoints(parsed, "A");
       }
 
       for (const p of match.teamB) {
@@ -52,9 +65,10 @@ export function computeLeaderboard(players: Player[], rounds: Round[]): PlayerSt
         e.setsLost += parsed.setsA;
         e.gamesWon += parsed.gamesB;
         e.gamesLost += parsed.gamesA;
-        if (parsed.winner === "B") { e.wins += 1; e.points += 3; }
-        else if (parsed.winner === "A") { e.losses += 1; }
-        else { e.draws += 1; e.points += 1; }
+        if (parsed.winner === "B") e.wins += 1;
+        else if (parsed.winner === "A") e.losses += 1;
+        else e.draws += 1;
+        e.points += getMatchPoints(parsed, "B");
       }
     }
   }

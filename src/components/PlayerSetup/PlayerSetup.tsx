@@ -1,4 +1,4 @@
-import type { Player } from "@/types";
+import type { Gender, Player } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +12,14 @@ interface PlayerSetupProps {
   players: Player[];
   playerInput: string;
   newPlayer: string;
-  newGender: string;
+  newGender: Gender;
   newStrength: number;
+  readOnly?: boolean;
   stats: { men: number; women: number; matchesPerRound: number; benchedPerRound: number };
   roundCount: number;
   onPlayerInputChange: (v: string) => void;
   onNewPlayerChange: (v: string) => void;
-  onNewGenderChange: (v: string) => void;
+  onNewGenderChange: (v: Gender) => void;
   onNewStrengthChange: (v: number) => void;
   onRoundCountChange: (v: string) => void;
   onAddSingle: () => void;
@@ -27,7 +28,7 @@ interface PlayerSetupProps {
 }
 
 export function PlayerSetup(props: PlayerSetupProps) {
-  const { players, playerInput, newPlayer, newGender, newStrength, stats, roundCount } = props;
+  const { players, playerInput, newPlayer, newGender, newStrength, readOnly = false, stats, roundCount } = props;
 
   return (
     <Card className="rounded-3xl border-0 bg-emerald-50 shadow-sm">
@@ -43,19 +44,20 @@ export function PlayerSetup(props: PlayerSetupProps) {
           <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
             <Input
               value={newPlayer}
+              disabled={readOnly}
               onChange={(e) => props.onNewPlayerChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && props.onAddSingle()}
               placeholder="z. B. Max Mustermann"
               className="rounded-2xl bg-white"
             />
-            <select value={newGender} onChange={(e) => props.onNewGenderChange(e.target.value)} className="rounded-2xl border border-emerald-200 bg-white px-3 py-2 text-sm">
+            <select value={newGender} disabled={readOnly} onChange={(e) => props.onNewGenderChange(e.target.value as Gender)} className="rounded-2xl border border-emerald-200 bg-white px-3 py-2 text-sm disabled:opacity-60">
               <option value="m">Männlich</option>
               <option value="w">Weiblich</option>
             </select>
             <div className="rounded-2xl border border-emerald-200 bg-white px-3 py-2">
-              <StarRating value={newStrength} onChange={props.onNewStrengthChange} interactive />
+              <StarRating value={newStrength} onChange={props.onNewStrengthChange} interactive={!readOnly} />
             </div>
-            <Button onClick={props.onAddSingle} className="rounded-2xl bg-emerald-700 hover:bg-emerald-800">
+            <Button onClick={props.onAddSingle} disabled={readOnly} className="rounded-2xl bg-emerald-700 hover:bg-emerald-800">
               <LuPlus className="h-4 w-4" />
             </Button>
           </div>
@@ -65,11 +67,12 @@ export function PlayerSetup(props: PlayerSetupProps) {
           <Label>Mehrere Namen auf einmal</Label>
           <Textarea
             value={playerInput}
+            disabled={readOnly}
             onChange={(e) => props.onPlayerInputChange(e.target.value)}
             placeholder={"Ein Name pro Zeile oder getrennt mit Komma\nAnna\nBen\nClara\nDavid"}
             className="min-h-32 rounded-2xl bg-white"
           />
-          <Button variant="secondary" onClick={props.onAddBulk} className="rounded-2xl bg-emerald-100 text-emerald-900 hover:bg-emerald-200">
+          <Button variant="secondary" onClick={props.onAddBulk} disabled={readOnly} className="rounded-2xl bg-emerald-100 text-emerald-900 hover:bg-emerald-200">
             Namen übernehmen
           </Button>
         </div>
@@ -82,13 +85,13 @@ export function PlayerSetup(props: PlayerSetupProps) {
           </div>
           <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
             <Label className="mb-2 block">Rundenanzahl</Label>
-            <Input type="number" min={1} max={12} value={roundCount} onChange={(e) => props.onRoundCountChange(e.target.value)} className="rounded-2xl bg-white" />
+            <Input type="number" min={1} max={12} disabled={readOnly} value={roundCount} onChange={(e) => props.onRoundCountChange(e.target.value)} className="rounded-2xl bg-white" />
           </div>
         </div>
 
         {players.length > 0 && (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {players.map((p) => <PlayerCard key={p.id} player={p} onRemove={props.onRemove} />)}
+            {players.map((p) => <PlayerCard key={p.id} player={p} onRemove={readOnly ? undefined : props.onRemove} />)}
           </div>
         )}
         {players.length === 0 && (
